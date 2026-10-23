@@ -77,3 +77,17 @@ To be defined in the design system step.
 ## Environments
 Local: Clerk development instance, Convex dev deployment, Bunny "learnhub-dev" library, Stripe test mode. Production: Clerk production instance, Convex production deployment, Bunny "learnhub-prod" library, Stripe live mode.
 Never run npx convex deploy, any command with --prod, or change production settings unless the user explicitly asks in that message.
+
+<!-- convex-ai-start -->
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
+<!-- convex-ai-end -->
