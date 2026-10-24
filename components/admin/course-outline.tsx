@@ -39,6 +39,7 @@ import {
   type OutlineChapter,
   type OutlineLesson,
 } from "@/components/admin/use-outline-mutations";
+import { videoStatusLabels } from "@/components/admin/video-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -156,10 +157,12 @@ function SortableLesson({
               Free preview
             </Badge>
           ) : null}
-          {lesson.bunnyVideoId ? (
-            <Badge variant="outline" title={`Bunny video ${lesson.bunnyVideoId}`}>
+          {lesson.videoStatus ? (
+            <Badge variant={lesson.videoStatus === "failed" ? "destructive" : "outline"}>
               <VideoIcon data-icon="inline-start" />
-              Video
+              {lesson.videoStatus === "ready"
+                ? "Video"
+                : `Video: ${videoStatusLabels[lesson.videoStatus].toLowerCase()}`}
             </Badge>
           ) : null}
         </div>

@@ -35,7 +35,7 @@ export const contentLimits = {
 } as const;
 
 export type CourseField = "title" | "description" | "priceCents" | "thumbnail";
-export type LessonField = "title" | "description" | "bunnyVideoId";
+export type LessonField = "title" | "description";
 
 /** The ConvexError payload for rejected input; `field` lets the form highlight it. */
 export type InvalidInputError = { code: "INVALID_INPUT"; field: string; message: string };
@@ -100,10 +100,8 @@ export function lessonDescriptionError(description: string): string | null {
 }
 
 /** Bunny Stream video ids are GUIDs. */
-export function bunnyVideoIdError(bunnyVideoId: string): string | null {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bunnyVideoId.trim())
-    ? null
-    : "Enter a Bunny Stream video ID like 1b2c3d4e-0000-4000-8000-000000000001.";
+export function isBunnyVideoId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 /** Trims and validates a chapter title, throwing INVALID_INPUT when it is bad. */
@@ -116,11 +114,10 @@ export function parseChapterTitle(title: string) {
   return trimmed;
 }
 
-/** Trims and validates lesson text; an empty description or video id becomes undefined. */
-export function parseLessonInput(input: { title: string; description: string; bunnyVideoId: string }) {
+/** Trims and validates lesson text; an empty description becomes undefined. */
+export function parseLessonInput(input: { title: string; description: string }) {
   const title = input.title.trim();
   const description = input.description.trim();
-  const bunnyVideoId = input.bunnyVideoId.trim().toLowerCase();
   const titleError = contentTitleError(title);
   if (titleError !== null) {
     invalid("title", titleError);
@@ -129,13 +126,7 @@ export function parseLessonInput(input: { title: string; description: string; bu
   if (descriptionError !== null) {
     invalid("description", descriptionError);
   }
-  if (bunnyVideoId !== "") {
-    const videoError = bunnyVideoIdError(bunnyVideoId);
-    if (videoError !== null) {
-      invalid("bunnyVideoId", videoError);
-    }
-  }
-  return { title, description: description || undefined, bunnyVideoId: bunnyVideoId || undefined };
+  return { title, description: description || undefined };
 }
 
 /** For limits that aren't tied to one form field. */
