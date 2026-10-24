@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as chapters from "../chapters.js";
 import type * as courses from "../courses.js";
+import type * as enrollments from "../enrollments.js";
 import type * as http from "../http.js";
 import type * as lessons from "../lessons.js";
 import type * as lib_access from "../lib/access.js";
@@ -18,6 +19,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_bunny from "../lib/bunny.js";
 import type * as lib_order from "../lib/order.js";
 import type * as lib_validators from "../lib/validators.js";
+import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 import type * as videos from "../videos.js";
 
@@ -31,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   chapters: typeof chapters;
   courses: typeof courses;
+  enrollments: typeof enrollments;
   http: typeof http;
   lessons: typeof lessons;
   "lib/access": typeof lib_access;
@@ -38,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "lib/bunny": typeof lib_bunny;
   "lib/order": typeof lib_order;
   "lib/validators": typeof lib_validators;
+  stripe: typeof stripe;
   users: typeof users;
   videos: typeof videos;
 }>;

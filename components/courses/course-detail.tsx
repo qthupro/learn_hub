@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { type Preloaded, usePreloadedQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { type Preloaded, useAction, useMutation, usePreloadedQuery, useQuery } from "convex/react";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
@@ -12,6 +14,7 @@ import { CourseThumbnail } from "@/components/courses/course-thumbnail";
 import { Eyebrow, Section, SectionHeading } from "@/components/landing/section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
 
 const perks = ["Lifetime access, no subscription", "Every future update included", "Watch on any device"];
@@ -21,6 +24,11 @@ const backLinkClass =
 
 export function CourseDetail({ preloaded }: { preloaded: Preloaded<typeof api.courses.getPublishedBySlug> }) {
   const course = usePreloadedQuery(preloaded);
+  const router = useRouter();
+  const viewerStatus = useQuery(api.enrollments.viewerStatus, course ? { courseId: course._id } : "skip");
+  const enrollFree = useMutation(api.enrollments.enrollFree);
+  const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
+  const [busy, setBusy] = useState(false);
 
   // The course was unpublished or deleted while the page was open.
   if (course === null) {
@@ -43,11 +51,30 @@ export function CourseDetail({ preloaded }: { preloaded: Preloaded<typeof api.co
     { label: "Of video", value: duration ?? "—" },
   ];
 
-  function enroll() {
-    // Placeholder until enrollment and Stripe checkout are built.
-    toast("Enrollment opens soon", {
-      description: free ? "Free enrollment is on its way." : "Checkout is on its way.",
-    });
+  const enrolled = viewerStatus === "enrolled";
+
+  async function enroll() {
+    if (course === null || viewerStatus === undefined || enrolled) {
+      return;
+    }
+    if (viewerStatus === "signed_out") {
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(`/courses/${course.slug}`)}`);
+      return;
+    }
+    setBusy(true);
+    try {
+      if (free) {
+        await enrollFree({ courseId: course._id });
+        toast.success("You're enrolled", { description: `Welcome to ${course.title}.` });
+        setBusy(false);
+      } else {
+        // Stays busy while the browser leaves for Stripe Checkout.
+        window.location.assign(await createCheckoutSession({ courseId: course._id }));
+      }
+    } catch (error) {
+      toast.error(errorMessage(error));
+      setBusy(false);
+    }
   }
 
   return (
@@ -106,8 +133,17 @@ export function CourseDetail({ preloaded }: { preloaded: Preloaded<typeof api.co
                     size="lg"
                     className="group/enroll h-14 w-full rounded-full bg-brand text-lg font-black text-brand-foreground hover:bg-brand/85"
                     onClick={enroll}
+                    disabled={viewerStatus === undefined || enrolled || busy}
                   >
-                    {free ? "Enroll for free" : "Enroll now"}
+                    {enrolled
+                      ? "You're enrolled"
+                      : busy
+                        ? free
+                          ? "Enrolling…"
+                          : "Redirecting to checkout…"
+                        : free
+                          ? "Enroll for free"
+                          : "Enroll now"}
                     <ArrowRightIcon
                       data-icon="inline-end"
                       className="size-5 transition-transform motion-safe:group-hover/enroll:translate-x-1"
