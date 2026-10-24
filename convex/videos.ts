@@ -10,8 +10,16 @@ import {
   query,
   type MutationCtx,
 } from "./_generated/server";
+import { getFreePreviewVideo } from "./lib/access";
 import { requireAdmin } from "./lib/auth";
-import { createBunnyVideo, deleteBunnyVideo, fetchBunnyVideo, signedEmbedUrl, signUpload } from "./lib/bunny";
+import {
+  createBunnyVideo,
+  deleteBunnyVideo,
+  fetchBunnyVideo,
+  FREE_PREVIEW_TOKEN_TTL_SECONDS,
+  signedEmbedUrl,
+  signUpload,
+} from "./lib/bunny";
 import { videoStatusValidator, type VideoStatus } from "./lib/validators";
 
 /** Deletes a video record and schedules removal of its file from Bunny Stream. */
@@ -233,6 +241,32 @@ export const previewUrl = action({
       return null;
     }
     return await signedEmbedUrl(video.bunnyVideoId);
+  },
+});
+
+/** The Bunny id of a playable free preview lesson's video, or null. No sign-in needed. */
+export const freePreviewBunnyId = internalQuery({
+  args: { lessonId: v.id("lessons") },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { lessonId }) => {
+    const video = await getFreePreviewVideo(ctx, lessonId);
+    return video?.bunnyVideoId ?? null;
+  },
+});
+
+/**
+ * A short-lived, token-signed player URL for a free preview lesson of a published course. Anyone
+ * can call it; every other lesson, and every lesson of a draft course, is NOT_FOUND.
+ */
+export const freePreviewUrl = action({
+  args: { lessonId: v.id("lessons") },
+  returns: v.string(),
+  handler: async (ctx, { lessonId }): Promise<string> => {
+    const bunnyVideoId: string | null = await ctx.runQuery(internal.videos.freePreviewBunnyId, { lessonId });
+    if (bunnyVideoId === null) {
+      throw new ConvexError({ code: "NOT_FOUND" });
+    }
+    return await signedEmbedUrl(bunnyVideoId, FREE_PREVIEW_TOKEN_TTL_SECONDS);
   },
 });
 

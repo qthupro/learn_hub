@@ -1,46 +1,45 @@
 import Link from "next/link";
 import { ArrowUpRightIcon } from "lucide-react";
-import { type CourseSummary, categories } from "@/components/courses/course-data";
+import { categories } from "@/components/courses/course-data";
 import { Section, SectionHeading } from "@/components/landing/section";
 
-export function Categories({ courses }: { courses: CourseSummary[] }) {
+export function Categories() {
   return (
-    <Section id="categories" className="bg-muted/30">
+    <Section id="categories">
       <SectionHeading
         eyebrow="Categories"
-        title="Learn the skills that move your career"
-        description="Focused courses across the disciplines modern teams rely on."
-        className="mb-12 sm:mb-16"
+        title="Learn the skills that move your career."
+        className="mb-16 sm:mb-20"
       />
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {categories.map(({ id, name, description, icon: Icon }) => {
-          const count = courses.filter((course) => course.category === id).length;
-          return (
-            <li key={id}>
-              <Link
-                href="/#courses"
-                className="group flex h-full items-start gap-4 rounded-xl border bg-card p-5 shadow-xs transition-all duration-300 outline-none hover:border-foreground/20 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground">
-                  <Icon aria-hidden className="size-5" />
+      <ul className="border-b-2 border-foreground">
+        {categories.map(({ id, name, description }, index) => (
+          <li key={id} className="reveal border-t-2 border-foreground">
+            <Link
+              href="/#courses"
+              className="group relative isolate flex items-center gap-4 px-1 py-6 transition-colors duration-300 outline-none hover:text-brand-foreground focus-visible:bg-brand focus-visible:text-brand-foreground sm:gap-8 sm:px-4 sm:py-8"
+            >
+              {/* Accent fill that sweeps in from the left on hover. */}
+              <span
+                aria-hidden
+                className="absolute inset-0 -z-10 origin-left scale-x-0 bg-brand transition-transform duration-500 ease-out group-hover:scale-x-100 motion-reduce:transition-none"
+              />
+              <span className="w-8 shrink-0 font-mono text-sm font-bold tabular-nums">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-3xl leading-none font-black tracking-[-0.045em] sm:text-5xl lg:text-6xl">
+                  {name}
                 </span>
-                <span className="flex-1 space-y-1">
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="font-semibold tracking-title">{name}</span>
-                    <ArrowUpRightIcon
-                      aria-hidden
-                      className="size-4 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
-                    />
-                  </span>
-                  <span className="block text-sm text-muted-foreground">{description}</span>
-                  <span className="block pt-1 text-xs font-medium text-muted-foreground">
-                    {count === 0 ? "Coming soon" : `${count} ${count === 1 ? "course" : "courses"}`}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+                <span className="mt-2 block text-sm font-medium opacity-80 sm:text-base">{description}</span>
+              </span>
+              <ArrowUpRightIcon
+                aria-hidden
+                className="size-8 shrink-0 transition-transform duration-500 ease-out motion-safe:group-hover:rotate-45 sm:size-12"
+                strokeWidth={2.25}
+              />
+            </Link>
+          </li>
+        ))}
       </ul>
     </Section>
   );

@@ -3,8 +3,10 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { getPublishedCourseBySlug } from "./lib/access";
 import { requireAdmin } from "./lib/auth";
 import {
+  contentLimits,
   courseCategoryValidator,
   courseLevelValidator,
   courseLimits,
@@ -16,6 +18,52 @@ import schema from "./schema";
 
 const adminCourseValidator = schema.doc("courses").extend({
   thumbnailUrl: v.union(v.string(), v.null()),
+});
+
+/** The public card shape: only what the landing page shows, never draft or admin fields. */
+const publishedCourseValidator = v.object({
+  _id: v.id("courses"),
+  slug: v.string(),
+  title: v.string(),
+  category: courseCategoryValidator,
+  level: courseLevelValidator,
+  priceCents: v.number(),
+  thumbnailUrl: v.union(v.string(), v.null()),
+  lessonCount: v.number(),
+});
+
+const PUBLISHED_COURSES_LIMIT = 12;
+// Lessons are counted by reading them, so cap the read per course. Replace with a stored
+// count or @convex-dev/aggregate once courses grow past this.
+const LESSON_COUNT_CAP = 500;
+
+/** A published course page: course facts plus its curriculum, without any video ids. */
+const courseDetailValidator = v.object({
+  _id: v.id("courses"),
+  slug: v.string(),
+  title: v.string(),
+  description: v.string(),
+  category: courseCategoryValidator,
+  level: courseLevelValidator,
+  priceCents: v.number(),
+  thumbnailUrl: v.union(v.string(), v.null()),
+  lessonCount: v.number(),
+  durationSeconds: v.number(),
+  chapters: v.array(
+    v.object({
+      _id: v.id("chapters"),
+      title: v.string(),
+      lessons: v.array(
+        v.object({
+          _id: v.id("lessons"),
+          title: v.string(),
+          durationSeconds: v.union(v.number(), v.null()),
+          // True only for a free preview lesson whose video is ready to play.
+          canPreview: v.boolean(),
+        }),
+      ),
+    }),
+  ),
 });
 
 const courseFields = {
@@ -75,6 +123,92 @@ async function uniqueSlug(ctx: MutationCtx, title: string) {
   }
   throw new ConvexError({ code: "CONFLICT", message: "Too many courses share this title." });
 }
+
+/** Published courses in catalog order for the public landing page. Anyone can call it. */
+export const listPublished = query({
+  args: {},
+  returns: v.array(publishedCourseValidator),
+  handler: async (ctx) => {
+    const courses = await ctx.db
+      .query("courses")
+      .withIndex("by_status_position", (q) => q.eq("status", "published"))
+      .take(PUBLISHED_COURSES_LIMIT);
+    return await Promise.all(
+      courses.map(async (course) => {
+        const lessons = await ctx.db
+          .query("lessons")
+          .withIndex("by_course", (q) => q.eq("courseId", course._id))
+          .take(LESSON_COUNT_CAP);
+        return {
+          _id: course._id,
+          slug: course.slug,
+          title: course.title,
+          category: course.category,
+          level: course.level,
+          priceCents: course.priceCents,
+          thumbnailUrl: course.thumbnailId ? await ctx.storage.getUrl(course.thumbnailId) : null,
+          lessonCount: lessons.length,
+        };
+      }),
+    );
+  },
+});
+
+/** A published course and its curriculum for the public course page; null for drafts and unknown slugs. */
+export const getPublishedBySlug = query({
+  args: { slug: v.string() },
+  returns: v.union(courseDetailValidator, v.null()),
+  handler: async (ctx, { slug }) => {
+    const course = await getPublishedCourseBySlug(ctx, slug);
+    if (course === null) {
+      return null;
+    }
+    const chapters = await ctx.db
+      .query("chapters")
+      .withIndex("by_course_position", (q) => q.eq("courseId", course._id))
+      .take(contentLimits.chaptersPerCourse);
+
+    const outline = await Promise.all(
+      chapters.map(async (chapter) => {
+        const lessons = await ctx.db
+          .query("lessons")
+          .withIndex("by_chapter_position", (q) => q.eq("chapterId", chapter._id))
+          .take(contentLimits.lessonsPerChapter);
+        return {
+          _id: chapter._id,
+          title: chapter.title,
+          lessons: await Promise.all(
+            lessons.map(async (lesson) => {
+              const video = lesson.videoId ? await ctx.db.get("videos", lesson.videoId) : null;
+              const ready = video?.status === "ready";
+              return {
+                _id: lesson._id,
+                title: lesson.title,
+                durationSeconds: ready ? (video.durationSeconds ?? null) : null,
+                canPreview: lesson.isFreePreview && ready,
+              };
+            }),
+          ),
+        };
+      }),
+    );
+    const lessons = outline.flatMap((chapter) => chapter.lessons);
+
+    return {
+      _id: course._id,
+      slug: course.slug,
+      title: course.title,
+      description: course.description,
+      category: course.category,
+      level: course.level,
+      priceCents: course.priceCents,
+      thumbnailUrl: course.thumbnailId ? await ctx.storage.getUrl(course.thumbnailId) : null,
+      lessonCount: lessons.length,
+      durationSeconds: lessons.reduce((total, lesson) => total + (lesson.durationSeconds ?? 0), 0),
+      chapters: outline,
+    };
+  },
+});
 
 /** Every course, drafts included, in catalog order. Admin only. */
 export const listForAdmin = query({

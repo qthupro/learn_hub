@@ -23,7 +23,7 @@ const columns = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-muted/30">
+    <footer className="bg-background">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-[minmax(0,2fr)_repeat(2,minmax(0,1fr))]">
           <div className="max-w-xs space-y-4">
