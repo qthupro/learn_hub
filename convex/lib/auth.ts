@@ -30,3 +30,17 @@ export async function requireUser(ctx: Ctx): Promise<Doc<"users">> {
   }
   return user;
 }
+
+/** The signed-in user's record if they are an admin, otherwise null. */
+export async function getCurrentAdmin(ctx: Ctx): Promise<Doc<"users"> | null> {
+  const user = await getCurrentUser(ctx);
+  return user?.role === "admin" ? user : null;
+}
+
+export async function requireAdmin(ctx: Ctx): Promise<Doc<"users">> {
+  const user = await requireUser(ctx);
+  if (user.role !== "admin") {
+    throw new ConvexError({ code: "FORBIDDEN" });
+  }
+  return user;
+}

@@ -1,11 +1,15 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { AdminNavLink } from "@/components/admin/admin-nav-link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { MobileNav } from "@/components/mobile-nav";
 import { siteNavLinks } from "@/components/site-nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+const desktopNavLinkClass =
+  "rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50";
 
 function AuthControls() {
   return (
@@ -35,14 +39,11 @@ export function SiteHeader() {
           <Logo />
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             {siteNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
+              <Link key={link.href} href={link.href} className={desktopNavLinkClass}>
                 {link.label}
               </Link>
             ))}
+            <AdminNavLink className={desktopNavLinkClass} />
           </nav>
         </div>
         <div className="flex h-8 items-center gap-1.5">

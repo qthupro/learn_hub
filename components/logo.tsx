@@ -2,7 +2,7 @@ import Link from "next/link";
 import { GraduationCapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({ className, labelClassName }: { className?: string; labelClassName?: string }) {
   return (
     <Link
       href="/"
@@ -11,10 +11,10 @@ export function Logo({ className }: { className?: string }) {
         className,
       )}
     >
-      <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+      <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
         <GraduationCapIcon aria-hidden className="size-4" />
       </span>
-      LearnHub
+      <span className={labelClassName}>LearnHub</span>
     </Link>
   );
 }

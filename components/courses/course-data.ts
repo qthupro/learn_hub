@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { CourseCategory } from "@/convex/lib/validators";
 import {
   BrainCircuitIcon,
   BriefcaseIcon,
@@ -8,13 +9,8 @@ import {
   PaletteIcon,
 } from "lucide-react";
 
-export type CategoryId =
-  | "development"
-  | "design"
-  | "data"
-  | "ai"
-  | "business"
-  | "photography";
+/** Category ids are owned by the Convex schema. */
+export type CategoryId = CourseCategory;
 
 export type Category = {
   id: CategoryId;
