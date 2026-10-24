@@ -68,4 +68,27 @@ export default defineSchema({
     .index("by_bunny_video_id", ["bunnyVideoId"])
     .index("by_lesson", ["lessonId"])
     .index("by_status", ["status"]),
+
+  // One row per student per course; enrollments.ts keeps it unique.
+  enrollments: defineTable({
+    userId: v.id("users"),
+    courseId: v.id("courses"),
+    source: v.union(v.literal("free"), v.literal("stripe")),
+    // The paid checkout that granted access; unset for free enrollments.
+    checkoutId: v.optional(v.id("checkouts")),
+  })
+    .index("by_user_and_course", ["userId", "courseId"])
+    .index("by_course", ["courseId"]),
+
+  // Every Stripe Checkout Session we create. The webhook only fulfills sessions recorded here, and
+  // takes the student and course from this row rather than from Stripe metadata.
+  checkouts: defineTable({
+    stripeSessionId: v.string(),
+    userId: v.id("users"),
+    courseId: v.id("courses"),
+    amountCents: v.number(),
+    status: v.union(v.literal("pending"), v.literal("paid")),
+    // What Stripe reported as charged, set when the paid webhook is processed.
+    amountPaidCents: v.optional(v.number()),
+  }).index("by_stripe_session_id", ["stripeSessionId"]),
 });

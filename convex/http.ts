@@ -60,4 +60,22 @@ http.route({
   }),
 });
 
+/**
+ * Stripe webhook: POST /stripe/webhook. The raw body and signature go to a Node action that
+ * verifies them with the Stripe SDK; enrollment for paid courses happens only there.
+ */
+http.route({
+  path: "/stripe/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const signature = request.headers.get("stripe-signature");
+    if (signature === null) {
+      return new Response("Missing signature", { status: 400 });
+    }
+    const body = await request.text();
+    const verified = await ctx.runAction(internal.stripe.handleWebhook, { body, signature });
+    return verified ? new Response(null, { status: 200 }) : new Response("Invalid signature", { status: 400 });
+  }),
+});
+
 export default http;
