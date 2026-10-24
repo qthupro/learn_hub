@@ -1,7 +1,4 @@
-import { QuoteIcon, StarIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Section, SectionHeading } from "@/components/landing/section";
-import { initials } from "@/lib/utils";
 
 const testimonials = [
   {
@@ -42,39 +39,35 @@ const testimonials = [
   },
 ];
 
-export function Testimonials() {
+function Byline({ name, role }: { name: string; role: string }) {
   return (
-    <Section id="testimonials" className="bg-muted/30">
-      <SectionHeading
-        eyebrow="Testimonials"
-        title="Learners who stopped renting their education"
-        className="mb-12 sm:mb-16"
-      />
-      <ul className="gap-6 sm:columns-2 lg:columns-3">
-        {testimonials.map((item) => (
-          <li
-            key={item.name}
-            className="mb-6 break-inside-avoid rounded-2xl border bg-card p-6 shadow-xs"
-          >
+    <figcaption className="text-sm">
+      <span className="font-black">{name}</span>
+      <span className="opacity-80"> · {role}</span>
+    </figcaption>
+  );
+}
+
+export function Testimonials() {
+  const [lead, ...rest] = testimonials;
+
+  return (
+    <Section id="testimonials" tone="brand">
+      <SectionHeading eyebrow="Testimonials" title="Learners who stopped renting their education." className="mb-16 sm:mb-20" />
+
+      <figure className="reveal max-w-5xl space-y-6">
+        <blockquote className="text-3xl leading-[1.1] font-black tracking-[-0.035em] text-balance sm:text-5xl">
+          “{lead.quote}”
+        </blockquote>
+        <Byline name={lead.name} role={lead.role} />
+      </figure>
+
+      <ul className="mt-20 grid gap-x-12 gap-y-12 sm:mt-24 sm:grid-cols-2 lg:grid-cols-3">
+        {rest.map((item) => (
+          <li key={item.name} className="reveal border-t-2 border-brand-foreground pt-6">
             <figure className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-0.5" role="img" aria-label="5 out of 5 stars">
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <StarIcon key={index} aria-hidden className="size-3.5 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <QuoteIcon aria-hidden className="size-5 text-muted-foreground/30" />
-              </div>
-              <blockquote className="text-[0.9375rem]/relaxed text-pretty text-foreground/90">“{item.quote}”</blockquote>
-              <figcaption className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="text-xs font-medium">{initials(item.name)}</AvatarFallback>
-                </Avatar>
-                <div className="text-sm leading-tight">
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-muted-foreground">{item.role}</p>
-                </div>
-              </figcaption>
+              <blockquote className="text-lg/relaxed font-semibold">“{item.quote}”</blockquote>
+              <Byline name={item.name} role={item.role} />
             </figure>
           </li>
         ))}

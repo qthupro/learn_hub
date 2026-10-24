@@ -30,3 +30,10 @@ export function formatCount(value: number) {
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
+
+/** Video length as a clock, e.g. 754 → "12:34". */
+export function formatClock(totalSeconds: number) {
+  const seconds = Math.round(totalSeconds);
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}

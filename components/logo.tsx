@@ -11,7 +11,7 @@ export function Logo({ className, labelClassName }: { className?: string; labelC
         className,
       )}
     >
-      <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+      <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-brand text-brand-foreground">
         <GraduationCapIcon aria-hidden className="size-4" />
       </span>
       <span className={labelClassName}>LearnHub</span>

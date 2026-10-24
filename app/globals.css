@@ -9,6 +9,9 @@
   --color-background: var(--background);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --animate-marquee: marquee 80s linear infinite;
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
@@ -52,6 +55,16 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Moves exactly one of two identical halves, so the loop restarts without a jump. */
+  @keyframes marquee {
+    from {
+      translate: 0 0;
+    }
+    to {
+      translate: -50% 0;
+    }
+  }
 }
 
 :root {
@@ -78,8 +91,12 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --brand: oklch(0.511 0.262 276.966);
-  --brand-foreground: oklch(0.985 0 0);
+  /* One accent: signal orange, always paired with ink text for contrast. */
+  --brand: oklch(0.7 0.2 42);
+  --brand-foreground: oklch(0.16 0.02 40);
+  /* Inverted bands: near-black in light mode, warm off-white in dark mode. */
+  --ink: oklch(0.16 0.01 50);
+  --ink-foreground: oklch(0.98 0.005 80);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -106,8 +123,10 @@
   --muted-foreground: oklch(0.705 0.015 286.067);
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
-  --brand: oklch(0.673 0.182 276.935);
-  --brand-foreground: oklch(0.141 0.005 285.823);
+  --brand: oklch(0.74 0.19 45);
+  --brand-foreground: oklch(0.16 0.02 40);
+  --ink: oklch(0.96 0.01 80);
+  --ink-foreground: oklch(0.16 0.01 50);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
@@ -173,5 +192,23 @@
   }
   section[id] {
     scroll-margin-top: 5rem;
+  }
+}
+
+/* Fades and lifts an element in as it scrolls into view; browsers without scroll-driven animations show it as is. */
+@utility reveal {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    translate: 0 2.5rem;
   }
 }

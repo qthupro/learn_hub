@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
+import { formatClock } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Phase =
@@ -23,12 +24,6 @@ type Phase =
   | { kind: "error"; fileName: string; percent: number; message: string; canResume: boolean }
   // The browser sent the whole file; waiting for Bunny to report it.
   | { kind: "sent" };
-
-function formatSeconds(total: number) {
-  const seconds = Math.round(total);
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
-}
 
 /** Token-signed Bunny player for a ready video. Keyed by video id, so a new video fetches a new URL. */
 function VideoPreview({ videoId, title }: { videoId: Id<"videos">; title: string }) {
@@ -243,7 +238,7 @@ export function LessonVideo({
               <Loader2Icon data-icon="inline-start" className="animate-spin" />
             ) : null}
             {waitingForBunny ? "Finishing upload" : videoStatusLabels[video.status]}
-            {video.status === "ready" && video.durationSeconds ? ` · ${formatSeconds(video.durationSeconds)}` : null}
+            {video.status === "ready" && video.durationSeconds ? ` · ${formatClock(video.durationSeconds)}` : null}
           </Badge>
         ) : null}
       </div>

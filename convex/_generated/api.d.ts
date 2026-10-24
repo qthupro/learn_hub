@@ -13,6 +13,7 @@ import type * as chapters from "../chapters.js";
 import type * as courses from "../courses.js";
 import type * as http from "../http.js";
 import type * as lessons from "../lessons.js";
+import type * as lib_access from "../lib/access.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_bunny from "../lib/bunny.js";
 import type * as lib_order from "../lib/order.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   courses: typeof courses;
   http: typeof http;
   lessons: typeof lessons;
+  "lib/access": typeof lib_access;
   "lib/auth": typeof lib_auth;
   "lib/bunny": typeof lib_bunny;
   "lib/order": typeof lib_order;

@@ -10,6 +10,8 @@ export const TUS_ENDPOINT = `${API_BASE}/tusupload`;
 export const UPLOAD_SIGNATURE_TTL_SECONDS = 2 * 60 * 60;
 /** How long an admin preview embed URL stays valid. */
 export const PREVIEW_TOKEN_TTL_SECONDS = 6 * 60 * 60;
+/** How long a public free preview embed URL stays valid; long enough to watch one lesson. */
+export const FREE_PREVIEW_TOKEN_TTL_SECONDS = 2 * 60 * 60;
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -67,9 +69,9 @@ export async function signUpload(videoId: string) {
 }
 
 /** A token-authenticated player URL. Never stored. */
-export async function signedEmbedUrl(videoId: string) {
+export async function signedEmbedUrl(videoId: string, ttlSeconds = PREVIEW_TOKEN_TTL_SECONDS) {
   const libraryId = bunnyEnv.libraryId();
-  const expires = Math.floor(Date.now() / 1000) + PREVIEW_TOKEN_TTL_SECONDS;
+  const expires = Math.floor(Date.now() / 1000) + ttlSeconds;
   const token = await sha256Hex(bunnyEnv.tokenKey() + videoId + expires);
   return `https://player.mediadelivery.net/embed/${libraryId}/${videoId}?token=${token}&expires=${expires}`;
 }
