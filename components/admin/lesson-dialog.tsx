@@ -1,18 +1,13 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useCallback, useId, useState, type FormEvent } from "react";
 import { useMutation } from "convex/react";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import {
-  bunnyVideoIdError,
-  contentLimits,
-  contentTitleError,
-  lessonDescriptionError,
-  type LessonField,
-} from "@/convex/lib/validators";
+import { contentLimits, contentTitleError, lessonDescriptionError, type LessonField } from "@/convex/lib/validators";
+import { LessonVideo } from "@/components/admin/lesson-video";
 import type { OutlineLesson } from "@/components/admin/use-outline-mutations";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,7 +24,15 @@ export type LessonTarget =
 type FieldErrors = Partial<Record<LessonField, string>>;
 
 /** Mounted only while the dialog is open, so every opening starts from the target's values. */
-function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => void }) {
+function LessonForm({
+  target,
+  onDone,
+  onUploadBusyChange,
+}: {
+  target: LessonTarget;
+  onDone: () => void;
+  onUploadBusyChange: (busy: boolean) => void;
+}) {
   const id = useId();
   const createLesson = useMutation(api.lessons.create);
   const updateLesson = useMutation(api.lessons.update);
@@ -37,7 +40,6 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
   const [title, setTitle] = useState(lesson?.title ?? "");
   const [description, setDescription] = useState(lesson?.description ?? "");
   const [isFreePreview, setIsFreePreview] = useState(lesson?.isFreePreview ?? false);
-  const [bunnyVideoId, setBunnyVideoId] = useState(lesson?.bunnyVideoId ?? "");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
 
@@ -50,7 +52,6 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
     const nextErrors: FieldErrors = {
       title: contentTitleError(title) ?? undefined,
       description: lessonDescriptionError(description) ?? undefined,
-      bunnyVideoId: bunnyVideoId.trim() ? (bunnyVideoIdError(bunnyVideoId) ?? undefined) : undefined,
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
@@ -60,7 +61,7 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
 
     setPending(true);
     try {
-      const fields = { title, description, isFreePreview, bunnyVideoId };
+      const fields = { title, description, isFreePreview };
       if (target.kind === "create") {
         await createLesson({ chapterId: target.chapterId, ...fields });
         toast.success("Lesson added");
@@ -71,7 +72,7 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
       onDone();
     } catch (error) {
       const field = invalidField(error);
-      if (field === "title" || field === "description" || field === "bunnyVideoId") {
+      if (field === "title" || field === "description") {
         setErrors((current) => ({ ...current, [field]: errorMessage(error) }));
       }
       toast.error(errorMessage(error));
@@ -137,30 +138,6 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
         {errorText("description")}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={fieldId("video")}>
-          Bunny Stream video ID <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <Input
-          id={fieldId("video")}
-          value={bunnyVideoId}
-          spellCheck={false}
-          autoComplete="off"
-          className="font-mono text-xs md:text-xs"
-          placeholder="1b2c3d4e-0000-4000-8000-000000000001"
-          onChange={(event) => {
-            setBunnyVideoId(event.target.value);
-            clearError("bunnyVideoId");
-          }}
-          {...invalidProps("bunnyVideoId")}
-        />
-        {errors.bunnyVideoId ? (
-          errorText("bunnyVideoId")
-        ) : (
-          <p className="text-xs text-muted-foreground">Paste the video&apos;s ID from Bunny Stream. Uploading comes later.</p>
-        )}
-      </div>
-
       <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor={fieldId("preview")}>Free preview</Label>
@@ -176,6 +153,12 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
         />
       </div>
 
+      {lesson ? (
+        <LessonVideo lessonId={lesson._id} lessonTitle={lesson.title} onBusyChange={onUploadBusyChange} />
+      ) : (
+        <p className="text-xs text-muted-foreground">You can upload a video after adding the lesson.</p>
+      )}
+
       <DialogFooter>
         <Button type="submit" disabled={pending}>
           {pending ? <Loader2Icon data-icon="inline-start" className="animate-spin" /> : null}
@@ -186,7 +169,10 @@ function LessonForm({ target, onDone }: { target: LessonTarget; onDone: () => vo
   );
 }
 
-/** `target` stays set while closing so the form doesn't vanish mid-animation. */
+/**
+ * `target` stays set while closing so the form doesn't vanish mid-animation. The dialog stays open
+ * while a video upload is running, since closing it would cancel the upload.
+ */
 export function LessonDialog({
   target,
   open,
@@ -196,10 +182,24 @@ export function LessonDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const changeOpen = useCallback(
+    (next: boolean) => {
+      if (!next && uploadBusy) {
+        toast.warning("Finish or cancel the video upload before closing.");
+        return;
+      }
+      onOpenChange(next);
+    },
+    [onOpenChange, uploadBusy],
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        {target ? <LessonForm target={target} onDone={() => onOpenChange(false)} /> : null}
+    <Dialog open={open} onOpenChange={changeOpen}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        {target ? (
+          <LessonForm target={target} onDone={() => changeOpen(false)} onUploadBusyChange={setUploadBusy} />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

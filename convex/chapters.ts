@@ -18,7 +18,6 @@ const outlineLessonValidator = v.object({
   title: v.string(),
   description: v.optional(v.string()),
   isFreePreview: v.boolean(),
-  bunnyVideoId: v.union(v.string(), v.null()),
   videoStatus: v.union(videoStatusValidator, v.null()),
 });
 
@@ -68,7 +67,6 @@ export const outlineForAdmin = query({
                   title: lesson.title,
                   description: lesson.description,
                   isFreePreview: lesson.isFreePreview,
-                  bunnyVideoId: video?.bunnyVideoId ?? null,
                   videoStatus: video?.status ?? null,
                 };
               }),
