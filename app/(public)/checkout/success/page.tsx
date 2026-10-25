@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CheckoutSuccess } from "@/components/courses/checkout-success";
 import { SiteFooter } from "@/components/site-footer";
 
-export const metadata: Metadata = { title: "Payment received · LearnHub" };
+export const metadata: Metadata = { title: "Payment received" };
 
 export default async function CheckoutSuccessPage({ searchParams }: PageProps<"/checkout/success">) {
   const { session_id } = await searchParams;

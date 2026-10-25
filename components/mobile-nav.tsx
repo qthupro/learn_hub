@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/logo";
 import { siteNavLinks } from "@/components/site-nav-links";
+import { SiteText } from "@/components/site-text";
 
 const mobileNavLinkClass =
   "rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
@@ -36,7 +37,7 @@ export function MobileNav() {
               onClick={() => setOpen(false)}
               className={mobileNavLinkClass}
             >
-              {link.label}
+              <SiteText text={link.label} />
             </Link>
           ))}
           <AdminNavLink className={mobileNavLinkClass} onClick={() => setOpen(false)} />

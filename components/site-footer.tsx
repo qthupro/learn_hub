@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { SiteDescription, SiteText } from "@/components/site-text";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const columns = [
@@ -14,7 +15,7 @@ const columns = [
   {
     title: "Company",
     links: [
-      { href: "/#benefits", label: "Why LearnHub" },
+      { href: "/#benefits", label: "Why {siteName}" },
       { href: "/#faq", label: "FAQ" },
       { href: "/sign-up", label: "Create account" },
     ],
@@ -29,7 +30,7 @@ export function SiteFooter() {
           <div className="max-w-xs space-y-4">
             <Logo />
             <p className="text-sm/relaxed text-muted-foreground">
-              Expert-led video courses you pay for once and keep forever. No subscriptions.
+              <SiteDescription />
             </p>
           </div>
           {columns.map((column) => (
@@ -42,7 +43,7 @@ export function SiteFooter() {
                       href={link.href}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {link.label}
+                      <SiteText text={link.label} />
                     </Link>
                   </li>
                 ))}
@@ -52,7 +53,7 @@ export function SiteFooter() {
         </div>
         <div className="mt-12 flex flex-col-reverse items-start justify-between gap-4 border-t pt-6 sm:flex-row sm:items-center">
           <p className="text-sm text-muted-foreground">
-            © LearnHub. All rights reserved.
+            <SiteText text="© {siteName}. All rights reserved." />
           </p>
           <ThemeToggle />
         </div>

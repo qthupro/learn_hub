@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { CompletedBadge } from "@/components/learn/completed-badge";
+import { Logo } from "@/components/logo";
 import { courseProgress, type LearningCourse } from "@/components/learn/learning-course";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,9 @@ function CourseProgress({ course }: { course: LearningCourse }) {
 export function LearnNavbar({ course }: { course: LearningCourse | null | undefined }) {
   return (
     <header className="sticky top-0 z-20 flex h-(--header-height) shrink-0 items-center gap-2 border-b bg-background px-3 sm:gap-3 sm:px-4">
+      {/* The name only on wide screens, so phones keep room for the course title. */}
+      <Logo className="shrink-0" labelClassName="hidden lg:inline" />
+      <Separator orientation="vertical" className="data-vertical:h-5 data-vertical:self-center" />
       <Button
         variant="ghost"
         size="sm"

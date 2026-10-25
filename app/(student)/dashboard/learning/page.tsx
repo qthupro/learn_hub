@@ -3,7 +3,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { LearningHistory } from "@/components/learn/learning-history";
 
 export const metadata: Metadata = {
-  title: "Learning history · LearnHub",
+  title: "Learning history",
 };
 
 export default function LearningHistoryPage() {

@@ -1,8 +1,8 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { LESSON_COUNT_CAP } from "./courses";
 import { getCurrentUser, requireUser } from "./lib/auth";
+import { courseProgress, lessonIdCache } from "./lib/progress";
 import { adjustTotals } from "./lib/stats";
 import { courseCategoryValidator } from "./lib/validators";
 
@@ -41,6 +41,11 @@ async function enrollOnce(
   await ctx.db.insert("enrollments", enrollment);
   if (firstEnrollment) {
     await adjustTotals(ctx, { students: 1 });
+  }
+  const student = await ctx.db.get("users", enrollment.userId);
+  if (student !== null) {
+    // Stored so the admin student list can sort by it.
+    await ctx.db.patch("users", student._id, { enrolledCourseCount: (student.enrolledCourseCount ?? 0) + 1 });
   }
   return true;
 }
@@ -90,33 +95,22 @@ export const listMine = query({
       .take(MY_COURSES_LIMIT);
     enrollments.sort((a, b) => b._creationTime - a._creationTime);
 
+    const lessonIds = lessonIdCache(ctx);
     const courses = await Promise.all(
       enrollments.map(async ({ courseId }) => {
         const course = await ctx.db.get("courses", courseId);
         if (course?.status !== "published") {
           return null;
         }
-        const [lessons, progress] = await Promise.all([
-          ctx.db
-            .query("lessons")
-            .withIndex("by_course", (q) => q.eq("courseId", courseId))
-            .take(LESSON_COUNT_CAP),
-          ctx.db
-            .query("lessonProgress")
-            .withIndex("by_user_and_course", (q) => q.eq("userId", user._id).eq("courseId", courseId))
-            .take(LESSON_COUNT_CAP),
-        ]);
-        // Only count lessons that still exist, so deleted lessons can't push progress past 100%.
-        const lessonIds = new Set(lessons.map((lesson) => lesson._id));
+        const progress = await courseProgress(ctx, user._id, courseId, lessonIds);
         return {
           _id: course._id,
           slug: course.slug,
           title: course.title,
           category: course.category,
           thumbnailUrl: course.thumbnailId ? await ctx.storage.getUrl(course.thumbnailId) : null,
-          lessonCount: lessons.length,
-          completedLessonCount: progress.filter((row) => row.completedAt !== undefined && lessonIds.has(row.lessonId))
-            .length,
+          lessonCount: progress.lessonCount,
+          completedLessonCount: progress.completedLessonCount,
         };
       }),
     );
@@ -281,6 +275,10 @@ export const fulfillCheckout = internalMutation({
     await ctx.db.patch("checkouts", checkout._id, { status: "paid", amountPaidCents, paidAt: Date.now() });
     // Counted once per checkout: a paid session returns early above on repeat deliveries.
     await adjustTotals(ctx, { revenueCents: amountPaidCents, coursesSold: 1 });
+    const buyer = await ctx.db.get("users", checkout.userId);
+    if (buyer !== null) {
+      await ctx.db.patch("users", buyer._id, { totalSpentCents: (buyer.totalSpentCents ?? 0) + amountPaidCents });
+    }
     const created = await enrollOnce(ctx, {
       userId: checkout.userId,
       courseId: checkout.courseId,

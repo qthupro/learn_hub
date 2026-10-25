@@ -3,7 +3,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { PaymentHistory } from "@/components/checkout/payment-history";
 
 export const metadata: Metadata = {
-  title: "Payment history · LearnHub",
+  title: "Payment history",
 };
 
 export default function PaymentHistoryPage() {

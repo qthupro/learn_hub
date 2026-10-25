@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, internalMutation, query } from "./_generated/server";
 import { getCurrentUser, requireIdentity } from "./lib/auth";
+import { studentSearchText } from "./lib/students";
 import schema from "./schema";
 
 /** The signed-in user's record, or null when signed out or not stored yet. */
@@ -84,18 +85,28 @@ export const upsert = internalMutation({
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", tokenIdentifier))
       .unique();
 
+    const searchText = studentSearchText(profile.name, profile.email);
+
     if (existing !== null) {
       if (
         existing.clerkUserId !== profile.clerkUserId ||
         existing.name !== profile.name ||
         existing.email !== profile.email ||
-        existing.imageUrl !== profile.imageUrl
+        existing.imageUrl !== profile.imageUrl ||
+        existing.searchText !== searchText
       ) {
-        await ctx.db.patch("users", existing._id, profile);
+        await ctx.db.patch("users", existing._id, { ...profile, searchText });
       }
       return existing._id;
     }
 
-    return await ctx.db.insert("users", { tokenIdentifier, ...profile, role: "student" });
+    return await ctx.db.insert("users", {
+      tokenIdentifier,
+      ...profile,
+      searchText,
+      role: "student",
+      enrolledCourseCount: 0,
+      totalSpentCents: 0,
+    });
   },
 });

@@ -15,9 +15,20 @@ export default defineSchema({
     email: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("student")),
+    // Name plus email (and its parts) for the admin student search; kept in step by users.upsert.
+    searchText: v.optional(v.string()),
+    // Kept in step with enrollments and paid checkouts so the admin student list can sort by them.
+    // Unset only on rows from before they existed; `npx convex run students:backfill` fills them.
+    enrolledCourseCount: v.optional(v.number()),
+    totalSpentCents: v.optional(v.number()),
   })
     .index("by_token", ["tokenIdentifier"])
-    .index("by_clerk_user_id", ["clerkUserId"]),
+    .index("by_clerk_user_id", ["clerkUserId"])
+    .index("by_role", ["role"])
+    .index("by_role_and_name", ["role", "name"])
+    .index("by_role_and_enrolled_course_count", ["role", "enrolledCourseCount"])
+    .index("by_role_and_total_spent_cents", ["role", "totalSpentCents"])
+    .searchIndex("search_text", { searchField: "searchText", filterFields: ["role"] }),
 
   courses: defineTable({
     title: v.string(),
@@ -108,6 +119,34 @@ export default defineSchema({
     // Paid checkouts.
     coursesSold: v.number(),
   }),
+
+  // A single row of site-wide settings, edited on the admin Settings page. Until it exists,
+  // defaultSiteSettings in lib/validators.ts applies.
+  siteSettings: defineTable({
+    siteName: v.string(),
+    description: v.string(),
+    logoId: v.optional(v.id("_storage")),
+    faviconId: v.optional(v.id("_storage")),
+    updatedAt: v.number(),
+    updatedBy: v.id("users"),
+  }),
+
+  // One row per visitor per page per UTC day, only so each is counted once. The visitor id is a
+  // random id from the browser; no IP address or other personal data is stored. Rows older than
+  // yesterday are deleted daily by crons.ts.
+  pageVisits: defineTable({
+    day: v.string(),
+    path: v.string(),
+    visitorId: v.string(),
+  })
+    .index("by_visitor_id_and_path_and_day", ["visitorId", "path", "day"])
+    .index("by_day", ["day"]),
+
+  // Unique page visits per UTC day ("YYYY-MM-DD"), for the admin visits chart.
+  dailyVisits: defineTable({
+    day: v.string(),
+    visits: v.number(),
+  }).index("by_day", ["day"]),
 
   // Every Stripe Checkout Session we create. The webhook only fulfills sessions recorded here, and
   // takes the student and course from this row rather than from Stripe metadata.

@@ -133,3 +133,55 @@ export function parseLessonInput(input: { title: string; description: string }) 
 export function invalidContent(message: string): never {
   invalid("form", message);
 }
+
+/** Site-wide settings, shared with the admin settings form so client and server agree. */
+export const siteSettingsLimits = {
+  siteNameMax: 60,
+  descriptionMax: 300,
+  logoMaxBytes: 1024 * 1024,
+  faviconMaxBytes: 256 * 1024,
+  // No SVG: it can carry scripts, and uploads are served as-is from Convex storage.
+  logoTypes: ["image/png", "image/jpeg", "image/webp"],
+  faviconTypes: ["image/png", "image/x-icon", "image/vnd.microsoft.icon"],
+} as const;
+
+/** Shown until an admin saves settings, and wherever a setting is left empty. */
+export const defaultSiteSettings = {
+  siteName: "LearnHub",
+  description: "Expert-led video courses you buy once and keep forever. No subscriptions, no recurring payments.",
+} as const;
+
+export type SiteSettingsField = "siteName" | "description" | "logo" | "favicon";
+
+/** The error message for a site settings text field, or null when it is valid. */
+export function siteSettingsFieldError(field: "siteName" | "description", value: string): string | null {
+  const length = value.trim().length;
+  if (field === "siteName") {
+    if (length === 0) {
+      return "Site name is required.";
+    }
+    return length > siteSettingsLimits.siteNameMax
+      ? `Site name must be ${siteSettingsLimits.siteNameMax} characters or fewer.`
+      : null;
+  }
+  return length > siteSettingsLimits.descriptionMax
+    ? `Description must be ${siteSettingsLimits.descriptionMax} characters or fewer.`
+    : null;
+}
+
+/** The error message for an uploaded logo or favicon, or null when it is acceptable. */
+export function siteImageError(kind: "logo" | "favicon", file: { type: string; size: number }): string | null {
+  const types: readonly string[] = kind === "logo" ? siteSettingsLimits.logoTypes : siteSettingsLimits.faviconTypes;
+  if (!types.includes(file.type)) {
+    return kind === "logo" ? "The logo must be a PNG, JPEG or WebP image." : "The favicon must be a PNG or ICO file.";
+  }
+  const max = kind === "logo" ? siteSettingsLimits.logoMaxBytes : siteSettingsLimits.faviconMaxBytes;
+  if (file.size > max) {
+    return kind === "logo" ? "The logo must be 1 MB or smaller." : "The favicon must be 256 KB or smaller.";
+  }
+  return null;
+}
+
+export function invalidSiteSetting(field: SiteSettingsField, message: string): never {
+  invalid(field, message);
+}

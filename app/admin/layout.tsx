@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { AdminLoading } from "@/components/admin/admin-gate";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { getSiteSettings } from "@/lib/site-settings";
 
-export const metadata: Metadata = {
-  title: { template: "%s · LearnHub Admin", default: "LearnHub Admin" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteSettings();
+  return { title: { template: `%s · ${siteName} Admin`, default: `${siteName} Admin` } };
+}
 
 async function AdminShellWithSidebarState({ children }: { children: React.ReactNode }) {
   // Written by the shadcn sidebar when it is toggled.
