@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { initials } from "@/lib/utils";
 
-export function AdminUserMenu({
+export function UserMenu({
   name,
   email,
   imageUrl,

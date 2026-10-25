@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { findAdminNavItem } from "@/components/admin/admin-nav";
-import { AdminUserMenu } from "@/components/layout/admin-user-menu";
+import { UserMenu } from "@/components/layout/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -34,7 +34,7 @@ export function AdminTopbar() {
         {admin === undefined ? (
           <Skeleton className="size-8 rounded-full" />
         ) : admin ? (
-          <AdminUserMenu {...admin} />
+          <UserMenu {...admin} />
         ) : null}
       </div>
     </header>

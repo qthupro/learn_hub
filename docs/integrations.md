@@ -25,6 +25,13 @@ Verify on the raw body before parsing, constant-time compare.
 Webhook Status is a DIFFERENT enum (0 Queued, 1 Processing, 2 Encoding, 3 Finished, 4 Resolution finished, 5 Failed, 6 PresignedUploadStarted, 7 PresignedUploadFinished, 8 PresignedUploadFailed, 9 CaptionsGenerated, 10 TitleOrDescriptionGenerated). Do not use it to set status; re-fetch the video from the API.
 Convex HTTP actions URL: https://<deployment>.convex.site — route /bunny/webhook.
 
+Player control (player.js). Source: bunny.net/docs/stream/playback-api.
+Package: npm player.js, pinned at 0.1.0 (Bunny also hosts an unpinned playerjs-latest.min.js; we don't use it). It reads window on import, so load it with a dynamic import in the browser. No bundled types; see types/player.js.d.ts.
+Usage: new playerjs.Player(iframe); player.on("ready", ...) fires once the player accepts commands. Create the Player before the iframe loads, or the one "ready" message can be missed.
+Events: timeupdate { seconds, duration } (Bunny's blog shows it as a JSON string, so accept both), play, pause, ended, seeked, progress, error. Methods include setCurrentTime(seconds), getCurrentTime(cb), getDuration(cb).
+Only works inside the embed iframe. Libraries restricted to allowed domains need referrerpolicy="strict-origin-when-cross-origin" on the iframe.
+player.js has no destroy method; each Player keeps its window message listener.
+
 ## Stripe (Checkout, one-time payments)
 Sources: docs.stripe.com/checkout/fulfillment, docs.stripe.com/webhooks.
 
