@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { getPublishedCourseBySlug } from "./lib/access";
 import { requireAdmin } from "./lib/auth";
+import { adjustTotals } from "./lib/stats";
 import {
   contentLimits,
   courseCategoryValidator,
@@ -35,7 +36,7 @@ const publishedCourseValidator = v.object({
 const PUBLISHED_COURSES_LIMIT = 12;
 // Lessons are counted by reading them, so cap the read per course. Replace with a stored
 // count or @convex-dev/aggregate once courses grow past this.
-const LESSON_COUNT_CAP = 500;
+export const LESSON_COUNT_CAP = 500;
 
 /** A published course page: course facts plus its curriculum, without any video ids. */
 const courseDetailValidator = v.object({
@@ -257,7 +258,7 @@ export const create = mutation({
     }
     const last = await ctx.db.query("courses").withIndex("by_position").order("desc").first();
 
-    return await ctx.db.insert("courses", {
+    const courseId = await ctx.db.insert("courses", {
       ...fields,
       ...text,
       slug: await uniqueSlug(ctx, text.title),
@@ -266,6 +267,8 @@ export const create = mutation({
       createdBy: admin._id,
       updatedAt: Date.now(),
     });
+    await adjustTotals(ctx, { courses: 1 });
+    return courseId;
   },
 });
 
@@ -319,6 +322,7 @@ export const remove = mutation({
       await ctx.storage.delete(course.thumbnailId);
     }
     await ctx.db.delete("courses", courseId);
+    await adjustTotals(ctx, { courses: -1 });
     // Chapters, lessons and videos are removed in background batches; nothing reads them once
     // the course is gone.
     await ctx.scheduler.runAfter(0, internal.chapters.deleteCourseContent, { courseId });

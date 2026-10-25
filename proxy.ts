@@ -1,6 +1,13 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export default clerkMiddleware();
+const isStudentRoute = createRouteMatcher(["/dashboard(.*)", "/learn(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // Signed-out visitors are redirected to the sign-in page and sent back afterwards.
+  if (isStudentRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
   matcher: [

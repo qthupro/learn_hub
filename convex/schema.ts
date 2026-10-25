@@ -80,6 +80,35 @@ export default defineSchema({
     .index("by_user_and_course", ["userId", "courseId"])
     .index("by_course", ["courseId"]),
 
+  // One row per student per lesson they have started watching. Written by the lesson player.
+  lessonProgress: defineTable({
+    userId: v.id("users"),
+    courseId: v.id("courses"),
+    lessonId: v.id("lessons"),
+    // Where playback last was, to resume from.
+    positionSeconds: v.optional(v.number()),
+    // Seconds actually played (seeking doesn't count); completes the lesson at 90% of its length.
+    watchedSeconds: v.optional(v.number()),
+    // Set once, when the lesson is completed; never cleared by watching again.
+    completedAt: v.optional(v.number()),
+    // Last save; the most recent row in a course is the lesson to reopen.
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user_and_lesson", ["userId", "lessonId"])
+    .index("by_user_and_course", ["userId", "courseId"])
+    .index("by_user_and_updated_at", ["userId", "updatedAt"]),
+
+  // A single row of running totals for the admin dashboard, kept in step by convex/lib/stats.ts in
+  // the same mutation as each write it counts. Rebuild with `npx convex run admin:recomputeStats`.
+  stats: defineTable({
+    courses: v.number(),
+    // Users with at least one enrollment.
+    students: v.number(),
+    revenueCents: v.number(),
+    // Paid checkouts.
+    coursesSold: v.number(),
+  }),
+
   // Every Stripe Checkout Session we create. The webhook only fulfills sessions recorded here, and
   // takes the student and course from this row rather than from Stripe metadata.
   checkouts: defineTable({
@@ -90,5 +119,9 @@ export default defineSchema({
     status: v.union(v.literal("pending"), v.literal("paid")),
     // What Stripe reported as charged, set when the paid webhook is processed.
     amountPaidCents: v.optional(v.number()),
-  }).index("by_stripe_session_id", ["stripeSessionId"]),
+    // When the paid webhook was processed. Unset on checkouts paid before it was recorded.
+    paidAt: v.optional(v.number()),
+  })
+    .index("by_stripe_session_id", ["stripeSessionId"])
+    .index("by_user_and_status", ["userId", "status"]),
 });

@@ -1,7 +1,10 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { LESSON_COUNT_CAP } from "./courses";
 import { getCurrentUser, requireUser } from "./lib/auth";
+import { adjustTotals } from "./lib/stats";
+import { courseCategoryValidator } from "./lib/validators";
 
 // Mutations run as serializable transactions, so "look up by user and course, then insert" in a
 // single mutation can never produce two enrollments, even when free enrollment and the webhook
@@ -30,7 +33,15 @@ async function enrollOnce(
   if ((await findEnrollment(ctx, enrollment.userId, enrollment.courseId)) !== null) {
     return false;
   }
+  const firstEnrollment =
+    (await ctx.db
+      .query("enrollments")
+      .withIndex("by_user_and_course", (q) => q.eq("userId", enrollment.userId))
+      .first()) === null;
   await ctx.db.insert("enrollments", enrollment);
+  if (firstEnrollment) {
+    await adjustTotals(ctx, { students: 1 });
+  }
   return true;
 }
 
@@ -48,6 +59,111 @@ export const viewerStatus = query({
       return "not_enrolled";
     }
     return (await findEnrollment(ctx, user._id, courseId)) === null ? "not_enrolled" : "enrolled";
+  },
+});
+
+const MY_COURSES_LIMIT = 50;
+
+/** A dashboard card: the course plus how far the viewer has got through it. */
+const myCourseValidator = v.object({
+  _id: v.id("courses"),
+  slug: v.string(),
+  title: v.string(),
+  category: courseCategoryValidator,
+  thumbnailUrl: v.union(v.string(), v.null()),
+  lessonCount: v.number(),
+  completedLessonCount: v.number(),
+});
+
+/** The viewer's enrolled courses, most recently enrolled first. Unpublished courses are hidden. */
+export const listMine = query({
+  args: {},
+  returns: v.array(myCourseValidator),
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (user === null) {
+      return [];
+    }
+    const enrollments = await ctx.db
+      .query("enrollments")
+      .withIndex("by_user_and_course", (q) => q.eq("userId", user._id))
+      .take(MY_COURSES_LIMIT);
+    enrollments.sort((a, b) => b._creationTime - a._creationTime);
+
+    const courses = await Promise.all(
+      enrollments.map(async ({ courseId }) => {
+        const course = await ctx.db.get("courses", courseId);
+        if (course?.status !== "published") {
+          return null;
+        }
+        const [lessons, progress] = await Promise.all([
+          ctx.db
+            .query("lessons")
+            .withIndex("by_course", (q) => q.eq("courseId", courseId))
+            .take(LESSON_COUNT_CAP),
+          ctx.db
+            .query("lessonProgress")
+            .withIndex("by_user_and_course", (q) => q.eq("userId", user._id).eq("courseId", courseId))
+            .take(LESSON_COUNT_CAP),
+        ]);
+        // Only count lessons that still exist, so deleted lessons can't push progress past 100%.
+        const lessonIds = new Set(lessons.map((lesson) => lesson._id));
+        return {
+          _id: course._id,
+          slug: course.slug,
+          title: course.title,
+          category: course.category,
+          thumbnailUrl: course.thumbnailId ? await ctx.storage.getUrl(course.thumbnailId) : null,
+          lessonCount: lessons.length,
+          completedLessonCount: progress.filter((row) => row.completedAt !== undefined && lessonIds.has(row.lessonId))
+            .length,
+        };
+      }),
+    );
+    return courses.filter((course) => course !== null);
+  },
+});
+
+const PAYMENT_HISTORY_LIMIT = 50;
+
+/** The viewer's paid checkouts, newest first. Pending and abandoned checkouts aren't listed. */
+export const myPayments = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("checkouts"),
+      courseTitle: v.string(),
+      // Null when the course is no longer published, so there is no page to link to.
+      courseSlug: v.union(v.string(), v.null()),
+      amountCents: v.number(),
+      paidAt: v.number(),
+      status: v.literal("paid"),
+    }),
+  ),
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (user === null) {
+      return [];
+    }
+    const checkouts = await ctx.db
+      .query("checkouts")
+      .withIndex("by_user_and_status", (q) => q.eq("userId", user._id).eq("status", "paid"))
+      .order("desc")
+      .take(PAYMENT_HISTORY_LIMIT);
+    return await Promise.all(
+      checkouts.map(async (checkout) => {
+        const course = await ctx.db.get("courses", checkout.courseId);
+        return {
+          _id: checkout._id,
+          // The student paid for it, so showing the title of a since-unpublished course is fine.
+          courseTitle: course?.title ?? "Deleted course",
+          courseSlug: course?.status === "published" ? course.slug : null,
+          amountCents: checkout.amountPaidCents ?? checkout.amountCents,
+          paidAt: checkout.paidAt ?? checkout._creationTime,
+          status: "paid" as const,
+        };
+      }),
+    );
   },
 });
 
@@ -162,7 +278,9 @@ export const fulfillCheckout = internalMutation({
     if (checkout.status === "paid") {
       return "already_fulfilled";
     }
-    await ctx.db.patch("checkouts", checkout._id, { status: "paid", amountPaidCents });
+    await ctx.db.patch("checkouts", checkout._id, { status: "paid", amountPaidCents, paidAt: Date.now() });
+    // Counted once per checkout: a paid session returns early above on repeat deliveries.
+    await adjustTotals(ctx, { revenueCents: amountPaidCents, coursesSold: 1 });
     const created = await enrollOnce(ctx, {
       userId: checkout.userId,
       courseId: checkout.courseId,

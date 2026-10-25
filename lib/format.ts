@@ -37,3 +37,10 @@ export function formatClock(totalSeconds: number) {
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }
+
+const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
+
+/** A timestamp as e.g. "Oct 25, 2026, 3:42 PM". Render it client-side only, as it uses the viewer's time zone. */
+export function formatDateTime(timestamp: number) {
+  return dateTime.format(timestamp);
+}

@@ -10,8 +10,8 @@ import {
   query,
   type MutationCtx,
 } from "./_generated/server";
-import { getFreePreviewVideo } from "./lib/access";
-import { requireAdmin } from "./lib/auth";
+import { canViewCourseContent, getFreePreviewVideo } from "./lib/access";
+import { getCurrentUser, requireAdmin } from "./lib/auth";
 import {
   createBunnyVideo,
   deleteBunnyVideo,
@@ -267,6 +267,41 @@ export const freePreviewUrl = action({
       throw new ConvexError({ code: "NOT_FOUND" });
     }
     return await signedEmbedUrl(bunnyVideoId, FREE_PREVIEW_TOKEN_TTL_SECONDS);
+  },
+});
+
+/** The Bunny id of a lesson's ready video if the viewer may watch it, otherwise null. */
+export const lessonBunnyId = internalQuery({
+  args: { lessonId: v.id("lessons") },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { lessonId }) => {
+    const user = await getCurrentUser(ctx);
+    const lesson = await ctx.db.get("lessons", lessonId);
+    if (user === null || lesson?.videoId === undefined) {
+      return null;
+    }
+    const course = await ctx.db.get("courses", lesson.courseId);
+    if (course === null || !(await canViewCourseContent(ctx, user, course))) {
+      return null;
+    }
+    const video = await ctx.db.get("videos", lesson.videoId);
+    return video?.status === "ready" ? video.bunnyVideoId : null;
+  },
+});
+
+/**
+ * A short-lived, token-signed player URL for a lesson the viewer may watch: enrolled students and
+ * admins. Anything else, including a lesson whose video isn't ready, is NOT_FOUND.
+ */
+export const lessonPlaybackUrl = action({
+  args: { lessonId: v.id("lessons") },
+  returns: v.string(),
+  handler: async (ctx, { lessonId }): Promise<string> => {
+    const bunnyVideoId: string | null = await ctx.runQuery(internal.videos.lessonBunnyId, { lessonId });
+    if (bunnyVideoId === null) {
+      throw new ConvexError({ code: "NOT_FOUND" });
+    }
+    return await signedEmbedUrl(bunnyVideoId);
   },
 });
 

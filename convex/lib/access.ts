@@ -29,3 +29,21 @@ export async function getFreePreviewVideo(ctx: QueryCtx, lessonId: Id<"lessons">
   const video = await ctx.db.get("videos", lesson.videoId);
   return video?.status === "ready" ? video : null;
 }
+
+/**
+ * Whether this user may watch the course's lessons: admins always, students only when the course
+ * is published and they are enrolled in it.
+ */
+export async function canViewCourseContent(ctx: QueryCtx, user: Doc<"users">, course: Doc<"courses">) {
+  if (user.role === "admin") {
+    return true;
+  }
+  if (course.status !== "published") {
+    return false;
+  }
+  const enrollment = await ctx.db
+    .query("enrollments")
+    .withIndex("by_user_and_course", (q) => q.eq("userId", user._id).eq("courseId", course._id))
+    .unique();
+  return enrollment !== null;
+}

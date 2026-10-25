@@ -132,11 +132,14 @@ export function CourseDetail({ preloaded }: { preloaded: Preloaded<typeof api.co
                   <Button
                     size="lg"
                     className="group/enroll h-14 w-full rounded-full bg-brand text-lg font-black text-brand-foreground hover:bg-brand/85"
+                    // Enrolled students get a link to their dashboard; enroll() ignores the click.
+                    nativeButton={!enrolled}
+                    render={enrolled ? <Link href="/dashboard" /> : undefined}
                     onClick={enroll}
-                    disabled={viewerStatus === undefined || enrolled || busy}
+                    disabled={viewerStatus === undefined || busy}
                   >
                     {enrolled
-                      ? "You're enrolled"
+                      ? "Go to dashboard"
                       : busy
                         ? free
                           ? "Enrolling…"
