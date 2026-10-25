@@ -62,6 +62,11 @@ export function CheckoutSuccess({ sessionId }: { sessionId: string | null }) {
   );
 }
 
+/** Shown while the page reads the session ID from the URL at request time. */
+export function CheckoutSuccessSkeleton() {
+  return <Message eyebrow="Checkout" title="Checking your payment…" pending />;
+}
+
 function Message({
   eyebrow,
   title,
