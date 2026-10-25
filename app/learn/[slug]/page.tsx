@@ -4,7 +4,7 @@ import { LessonSkeleton } from "@/components/learn/learn-states";
 import { ResumeLesson } from "@/components/learn/resume-lesson";
 
 export const metadata: Metadata = {
-  title: "Learning · LearnHub",
+  title: "Learning",
 };
 
 export default function LearnCoursePage({ params }: PageProps<"/learn/[slug]">) {

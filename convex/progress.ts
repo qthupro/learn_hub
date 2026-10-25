@@ -1,9 +1,9 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { LESSON_COUNT_CAP } from "./courses";
 import { canViewCourseContent } from "./lib/access";
 import { getCurrentUser, requireUser } from "./lib/auth";
+import { LESSON_COUNT_CAP } from "./lib/progress";
 import { contentLimits } from "./lib/validators";
 
 /** The learning page's view of a course: its outline plus which lessons the viewer has completed. */

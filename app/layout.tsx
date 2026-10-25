@@ -3,8 +3,10 @@ import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
+import { SiteSettingsProvider } from "@/components/providers/site-settings-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { getSiteSettings } from "@/lib/site-settings";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,13 +21,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "LearnHub",
-  description:
-    "Expert-led video courses you buy once and keep forever. No subscriptions, no recurring payments.",
-};
+/** Site name, description and favicon come from the admin Settings page. */
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    // Pages set just their own name, e.g. "Dashboard"; the site name is appended here.
+    title: { template: `%s · ${settings.siteName}`, default: settings.siteName },
+    description: settings.description,
+    // The default lives in public/ rather than app/, so the file convention doesn't add a second icon.
+    icons: { icon: settings.faviconUrl ?? "/favicon.ico" },
+  };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Cached, so this doesn't block prerendering; see lib/site-settings.ts.
+  const settings = await getSiteSettings();
+
   return (
     <html
       lang="en"
@@ -36,7 +47,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <ClerkProvider appearance={{ theme: shadcn }}>
-            <ConvexClientProvider>{children}</ConvexClientProvider>
+            <ConvexClientProvider>
+              <SiteSettingsProvider initial={settings}>{children}</SiteSettingsProvider>
+            </ConvexClientProvider>
             <Toaster />
           </ClerkProvider>
         </ThemeProvider>

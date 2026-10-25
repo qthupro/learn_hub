@@ -19,7 +19,8 @@ export function AdminTopbar() {
   const admin = useAdmin();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-lg supports-backdrop-filter:bg-background/60">
+    // Outside the scrolling content area, so it stays put without being sticky.
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
       {/* mr-1.5 matches the trigger's built-in icon padding, so the divider sits midway between icon and title. */}
       <Separator orientation="vertical" className="mr-1.5 data-vertical:h-4 data-vertical:self-center" />

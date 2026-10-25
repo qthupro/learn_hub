@@ -19,9 +19,9 @@ export async function generateMetadata({ params }: PageProps<"/courses/[slug]">)
   const { slug } = await params;
   const course = preloadedQueryResult(await loadCourse(slug));
   if (course === null) {
-    return { title: "Course not found · LearnHub" };
+    return { title: "Course not found" };
   }
-  return { title: `${course.title} · LearnHub`, description: course.description.slice(0, 160) };
+  return { title: course.title, description: course.description.slice(0, 160) };
 }
 
 async function CourseLoader({ params }: { params: Promise<{ slug: string }> }) {

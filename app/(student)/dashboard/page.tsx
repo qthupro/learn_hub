@@ -3,7 +3,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { EnrolledCourses } from "@/components/learn/enrolled-courses";
 
 export const metadata: Metadata = {
-  title: "Dashboard · LearnHub",
+  title: "Dashboard",
 };
 
 export default function StudentDashboardPage() {

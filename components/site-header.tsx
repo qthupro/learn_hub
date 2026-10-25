@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { MobileNav } from "@/components/mobile-nav";
 import { siteNavLinks } from "@/components/site-nav-links";
+import { SiteText } from "@/components/site-text";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const desktopNavLinkClass =
@@ -40,7 +41,7 @@ export function SiteHeader() {
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             {siteNavLinks.map((link) => (
               <Link key={link.href} href={link.href} className={desktopNavLinkClass}>
-                {link.label}
+                <SiteText text={link.label} />
               </Link>
             ))}
             <AdminNavLink className={desktopNavLinkClass} />

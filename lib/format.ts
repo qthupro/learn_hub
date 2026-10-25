@@ -44,3 +44,10 @@ const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeSty
 export function formatDateTime(timestamp: number) {
   return dateTime.format(timestamp);
 }
+
+const date = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
+
+/** A timestamp's date, e.g. "Oct 25, 2026". Client-side only, like formatDateTime. */
+export function formatDate(timestamp: number) {
+  return date.format(timestamp);
+}

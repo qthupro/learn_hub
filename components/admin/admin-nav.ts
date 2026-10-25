@@ -1,7 +1,6 @@
 import {
   BookOpenIcon,
   LayoutDashboardIcon,
-  ListVideoIcon,
   PlusCircleIcon,
   SettingsIcon,
   UsersIcon,
@@ -20,7 +19,6 @@ export const adminNavGroups: { label: string; items: AdminNavItem[] }[] = [
     items: [
       { href: "/admin/courses", label: "Courses", icon: BookOpenIcon },
       { href: "/admin/courses/new", label: "Create course", icon: PlusCircleIcon },
-      { href: "/admin/lessons", label: "Lessons", icon: ListVideoIcon },
     ],
   },
   {

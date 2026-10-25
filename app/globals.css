@@ -93,6 +93,8 @@
   --chart-5: oklch(0.269 0 0);
   /* One accent: signal orange, always paired with ink text for contrast. */
   --brand: oklch(0.7 0.2 42);
+  /* The visits chart's series: the brand hue, deepened to clear 3:1 against the card. */
+  --chart-visits: oklch(0.64 0.19 42);
   --brand-foreground: oklch(0.16 0.02 40);
   /* Inverted bands: near-black in light mode, warm off-white in dark mode. */
   --ink: oklch(0.16 0.01 50);
@@ -124,6 +126,7 @@
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --brand: oklch(0.74 0.19 45);
+  --chart-visits: oklch(0.66 0.17 45);
   --brand-foreground: oklch(0.16 0.02 40);
   --ink: oklch(0.96 0.01 80);
   --ink-foreground: oklch(0.16 0.01 50);
